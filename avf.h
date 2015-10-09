@@ -17,6 +17,20 @@
  *  limitations under the License.
  */
 
+#import <AVFoundation/AVFoundation.h>
+#import <Foundation/Foundation.h>
+
+@interface CaptureDevice : NSObject <AVCaptureVideoDataOutputSampleBufferDelegate>
+{
+@private
+    NSArray *videoDevices;
+}
+
+@property (retain) NSArray *videoDevices;
+// @property (retain) NSArray *audioDevices;
+
+@end
+
 #ifndef EXPORT_C
 #define EXPORT_C extern
 #endif
@@ -25,6 +39,7 @@
 extern "C" {
 #endif
 
+EXPORT_C void selectCaptureDevice(int num);
 EXPORT_C void readFrame(void *dest);
 EXPORT_C int setupAVCapture();
 EXPORT_C void stopAVCapture();

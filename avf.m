@@ -17,42 +17,38 @@
  *  limitations under the License.
  */
 
-#import <AVFoundation/AVFoundation.h>
-#import <Foundation/Foundation.h>
-
 #include <stdio.h>
 #include "avf.h"
 
-@interface CaptureDevice : NSObject <AVCaptureVideoDataOutputSampleBufferDelegate>
-
-@end
-
 @implementation CaptureDevice
+
+@synthesize videoDevices;
 
 static char *latest_frame;
 static NSLock* _lock;
+static NSArray *observers;
 
 static AVCaptureSession *captureSession;
 static CaptureDevice *captureDevice;
 static AVCaptureVideoDataOutput *videoDataOutput;
-static AVCaptureDevice *camera;
 static AVCaptureDeviceInput *videoInput;
 
-- (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
-       fromConnection:(AVCaptureConnection *)connection
+- (void)captureOutput:(AVCaptureOutput *)captureOutput
+    didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
+    fromConnection:(AVCaptureConnection *)connection
 {
     void *baseAddress;
     CVImageBufferRef imageBuffer;
     size_t bytesPerRow, width, height, frameBytes;
-    
+
     imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
-    
+
     bytesPerRow = CVPixelBufferGetBytesPerRow(imageBuffer);
     width = CVPixelBufferGetWidth(imageBuffer);
     height = CVPixelBufferGetHeight(imageBuffer);
-    
+
     CVPixelBufferLockBaseAddress(imageBuffer, 0);
-    
+
     OSType pixelFormat = CVPixelBufferGetPixelFormatType(imageBuffer);
     if (pixelFormat != kCVPixelFormatType_32BGRA) {
         // FIXME: It's not 32bit BGRA... We will need to convert the format?
@@ -62,8 +58,8 @@ static AVCaptureDeviceInput *videoInput;
 
     baseAddress = CVPixelBufferGetBaseAddress(imageBuffer);
     frameBytes = bytesPerRow * height;
-    // printf("Capture: %d %d %d dest %p src %p size %d\n", (int)bytesPerRow, (int)width, (int)height, latest_frame, baseAddress, frameBytes);
-    
+    // printf("Capture: %d %d %d dest %p src %p size %zu\n", (int)bytesPerRow, (int)width, (int)height, latest_frame, baseAddress, frameBytes);
+
     // Now we have the baseAddress to the image uncompressed, with format
     // [720, 1280, 4]. We don't need last plane (A) but it's more easier to
     // remove the plane with Python NumPy, so we just pass whole data to
@@ -72,24 +68,57 @@ static AVCaptureDeviceInput *videoInput;
     // Latest frame data is always in latest_frame buffer.
 
     [_lock lock];
-    
+
     memcpy(latest_frame, baseAddress, frameBytes);
 
     [_lock unlock];
-    
+
     CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
 }
 
+- (void)refreshDevices
+{
+    NSLog(@"Call refreshDevices");
+    [self setVideoDevices:[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]];
+    // [self setAudioDevices:[AVCaptureDevice devicesWithMediaType:AVMediaTypeAudio]];
+    for (AVCaptureDevice *Device in [self videoDevices])
+    {
+        NSLog(@"Device: %@", Device.localizedName);
+    }
+}
 
 - (id)init
 {
     self = [super init];
-    
+
     if (self)
         _lock = [[NSLock alloc] init];
-    
-    latest_frame = malloc(1280*720*4);
-    
+
+        // Create a capture session
+        captureSession = [[AVCaptureSession alloc] init];
+
+        // Capture Notification Observers
+        NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
+        id didStartRunningObserver =
+            [notificationCenter addObserverForName:AVCaptureSessionDidStartRunningNotification
+            object:captureSession
+            queue:[NSOperationQueue mainQueue]
+            usingBlock:^(NSNotification *note) {
+                NSLog(@"did start running");
+            }];
+        id deviceWasConnectedObserver =
+            [notificationCenter addObserverForName:AVCaptureDeviceWasConnectedNotification
+            object:nil
+            queue:[NSOperationQueue mainQueue]
+            usingBlock:^(NSNotification *note) {
+                NSLog(@"detected capture device");
+                [self refreshDevices];
+            }];
+        observers = [[NSArray alloc] initWithObjects:didStartRunningObserver, deviceWasConnectedObserver, nil];
+
+    // latest_frame = malloc(1280*720*4);
+    latest_frame = malloc(1920*1080*4);
+
     return self;
 }
 
@@ -102,56 +131,81 @@ extern "C" {
 
 EXPORT_C int setupAVCapture()
 {
-    // printf("setupAVCapture\n");
+    printf("setupAVCapture\n");
     NSError *e = nil;
-    
+
     NSDictionary *newSettings;
-    
+    AVCaptureDevice *camera;
+
+    // AVCaptureSessionはCaptureDeviceの中で初期化
     captureDevice = [[CaptureDevice alloc] init];
-    captureSession = [[AVCaptureSession alloc] init];
 
-    // FIXME: Must specify 720p
-    
-    captureSession.sessionPreset = AVCaptureSessionPresetMedium;
+    // カメラデバイスを取得(FaceTimeカメラしか取れないのでキャプチャデバイスは後で)
+    NSArray *cameraDevices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
+    for (AVCaptureDevice *Device in cameraDevices)
+    {
+        NSLog(@"Found camera device: %@ | uniqueID:%@ | modelID:%@",
+                Device.localizedName, Device.uniqueID, Device.modelID);
+        camera = Device;
+    }
 
-    // FIXME: Must find and initialize the proper device.
-    
-    camera = [AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo];
+    // カメラからの入力を作成
     videoInput = [[AVCaptureDeviceInput alloc] initWithDevice:camera error:&e];
 
-    // FIXME: BlackMagic hardwares need to be configured with proper frame rates.
-    //        For WiiU, 720p@59.997 is appropriate.
-    
     if (videoInput) {
         [captureSession addInput:videoInput];
-    }
-    else {
+    } else {
         return 0;
         // Handle the failure.
     }
 
+    // FIXME: Audio
+
+    // FIXME: BlackMagic hardwares need to be configured with proper frame rates.
+    //        For WiiU, 720p@59.997 is appropriate.
+
+    // FIXME: Must specify 720p
+    // if ([captureSession canSetSessionPreset:AVCaptureSessionPreset1280x720])
+    // {
+        // NSLog(@"Set 1280x720");
+        // captureSession.sessionPreset = AVCaptureSessionPreset1280x720;
+    // }
+    // else
+    // {
+        // NSLog(@"Set 640x480");
+        // captureSession.sessionPreset = AVCaptureSessionPreset640x480;
+    // }
+    // captureSession.sessionPreset = AVCaptureSessionPresetMedium;
+    captureSession.sessionPreset = AVCaptureSessionPresetHigh;
+
+
+    // 出力用のいろいろ
     videoDataOutput = [[AVCaptureVideoDataOutput alloc] init];
     [captureSession addOutput:videoDataOutput];
 
-    newSettings = @{ (NSString *)kCVPixelBufferPixelFormatTypeKey :
-                          @(kCVPixelFormatType_32BGRA) };
+    newSettings = @{
+        (NSString *)kCVPixelBufferPixelFormatTypeKey : @(kCVPixelFormatType_32BGRA)
+    };
     videoDataOutput.videoSettings = newSettings;
 
     dispatch_queue_t queue = dispatch_queue_create("myQueue", NULL);
     [videoDataOutput setAlwaysDiscardsLateVideoFrames:TRUE];
     [videoDataOutput setSampleBufferDelegate:captureDevice queue:queue];
-    
+
     // Output Format = BGRA
     videoDataOutput.videoSettings = @{
-                                           (id)kCVPixelBufferPixelFormatTypeKey : [NSNumber numberWithInt:kCVPixelFormatType_32BGRA]
-                                           };
+        (id)kCVPixelBufferPixelFormatTypeKey : [NSNumber numberWithInt:kCVPixelFormatType_32BGRA]
+    };
+
     // ビデオ入力のAVCaptureConnectionを取得
     AVCaptureConnection *videoConnection = [videoDataOutput connectionWithMediaType:AVMediaTypeVideo];
-    
+
     // 1秒あたり4回画像をキャプチャ
     videoConnection.videoMinFrameDuration = CMTimeMake(1, 4);
-    
-    [captureSession  startRunning];
+
+    // セッションをスタートさせる
+    [captureSession startRunning];
+
     return 1;
 error:
     printf("error?\n");
@@ -161,14 +215,51 @@ error:
 EXPORT_C void stopAVCapture() {
     [captureSession stopRunning];
     NSLog(@"stop running");
-
 }
 
 EXPORT_C void readFrame(void *dest) {
     [_lock lock];
-   
-    memcpy(dest, latest_frame, 1280 * 720 * 4);
-    
+
+    // memcpy(dest, latest_frame, 1280 * 720 * 4);
+    memcpy(dest, latest_frame, 1920 * 1080 * 4);
+
+    [_lock unlock];
+}
+
+EXPORT_C void selectCaptureDevice(int num)
+{
+    AVCaptureDevice *camera;
+
+    NSLog(@"selectCaptureDevice(%d)", num);
+    [captureDevice setVideoDevices:[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]];
+    camera = [captureDevice videoDevices][num];
+    NSLog(@"Seleted device: %@ | uniqueID:%@ | modelID:%@",
+        camera.localizedName, camera.uniqueID, camera.modelID);
+
+    [_lock lock];
+    // キャプチャデバイスの再設定
+    [captureSession beginConfiguration];
+
+    if (videoInput) {
+        // Remove the old device input from the session
+        [captureSession removeInput:videoInput];
+        setVideoInput:nil;
+    }
+
+    if (camera)
+    {
+        NSError *error = nil;
+        // Create a device input for the device and add it to the session
+        videoInput = [AVCaptureDeviceInput deviceInputWithDevice:camera error:&error];
+        if (videoInput) {
+            if (![camera supportsAVCaptureSessionPreset:[captureSession sessionPreset]])
+                captureSession.sessionPreset = AVCaptureSessionPresetHigh;
+
+            [captureSession addInput:videoInput];
+        }
+    }
+
+    [captureSession commitConfiguration];
     [_lock unlock];
 }
 
