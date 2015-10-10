@@ -78,13 +78,12 @@ static AVCaptureDeviceInput *videoInput;
 
 - (void)refreshDevices
 {
-    NSLog(@"Call refreshDevices");
+    // NSLog(@"Call refreshDevices");
     [self setVideoDevices:[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]];
     // [self setAudioDevices:[AVCaptureDevice devicesWithMediaType:AVMediaTypeAudio]];
-    for (AVCaptureDevice *Device in [self videoDevices])
-    {
-        NSLog(@"Device: %@", Device.localizedName);
-    }
+    [[self videoDevices] enumerateObjectsUsingBlock:^(AVCaptureDevice *Device, NSUInteger idx, BOOL *stop) {
+        NSLog(@"Device[%lu]: %@", idx, Device.localizedName);
+    }];
 }
 
 - (id)init
@@ -99,22 +98,15 @@ static AVCaptureDeviceInput *videoInput;
 
         // Capture Notification Observers
         NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
-        id didStartRunningObserver =
-            [notificationCenter addObserverForName:AVCaptureSessionDidStartRunningNotification
-            object:captureSession
-            queue:[NSOperationQueue mainQueue]
-            usingBlock:^(NSNotification *note) {
-                NSLog(@"did start running");
-            }];
         id deviceWasConnectedObserver =
             [notificationCenter addObserverForName:AVCaptureDeviceWasConnectedNotification
             object:nil
             queue:[NSOperationQueue mainQueue]
             usingBlock:^(NSNotification *note) {
-                NSLog(@"detected capture device");
+                // NSLog(@"detected capture device");
                 [self refreshDevices];
             }];
-        observers = [[NSArray alloc] initWithObjects:didStartRunningObserver, deviceWasConnectedObserver, nil];
+        observers = [[NSArray alloc] initWithObjects:deviceWasConnectedObserver, nil];
 
     // latest_frame = malloc(1280*720*4);
     latest_frame = malloc(1920*1080*4);
@@ -131,7 +123,7 @@ extern "C" {
 
 EXPORT_C int setupAVCapture()
 {
-    printf("setupAVCapture\n");
+    // printf("setupAVCapture\n");
     NSError *e = nil;
 
     NSDictionary *newSettings;
@@ -144,8 +136,8 @@ EXPORT_C int setupAVCapture()
     NSArray *cameraDevices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
     for (AVCaptureDevice *Device in cameraDevices)
     {
-        NSLog(@"Found camera device: %@ | uniqueID:%@ | modelID:%@",
-                Device.localizedName, Device.uniqueID, Device.modelID);
+        // NSLog(@"Found camera device: %@ | uniqueID:%@ | modelID:%@",
+                // Device.localizedName, Device.uniqueID, Device.modelID);
         camera = Device;
     }
 
@@ -214,7 +206,7 @@ error:
 
 EXPORT_C void stopAVCapture() {
     [captureSession stopRunning];
-    NSLog(@"stop running");
+    // NSLog(@"stop running");
 }
 
 EXPORT_C void readFrame(void *dest) {
@@ -230,10 +222,10 @@ EXPORT_C void selectCaptureDevice(int num)
 {
     AVCaptureDevice *camera;
 
-    NSLog(@"selectCaptureDevice(%d)", num);
+    // NSLog(@"selectCaptureDevice(%d)", num);
     [captureDevice setVideoDevices:[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]];
     camera = [captureDevice videoDevices][num];
-    NSLog(@"Seleted device: %@ | uniqueID:%@ | modelID:%@",
+    NSLog(@"Seleted capture device: %@ | uniqueID:%@ | modelID:%@",
         camera.localizedName, camera.uniqueID, camera.modelID);
 
     [_lock lock];
