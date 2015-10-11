@@ -8,7 +8,7 @@ all:
 clean:
 	rm -f wrtite_frames_to_tempdir libavf_ctypes.so
 
-test:
+test: all
 	@echo "Test 1: write_frames_to_tempdir (Write snapsots to /tmp/camera.[0-9].raw)"
 	@echo
 	rm -f /tmp/camera.?.raw
