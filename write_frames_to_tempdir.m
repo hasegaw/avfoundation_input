@@ -26,8 +26,7 @@ int main(int argc, const char * argv[]) {
     char filename[255];
     
     setupAVCapture();
-    // char *latest_frame = malloc(1280 * 720 * 4);
-    char *latest_frame = malloc(1920 * 1080 * 4);
+    char *latest_frame = malloc(1280 * 720 * 4);
     
     for ( i = 0; i < 10; i++) {
         sleep(1);
@@ -37,8 +36,7 @@ int main(int argc, const char * argv[]) {
 
             snprintf((char*) &filename, sizeof(filename), "/tmp/camera.%d.raw", i);
             int fd = open((char*) &filename, O_RDWR|O_CREAT|O_APPEND, 0666);
-            // int r= write(fd, (const void*) latest_frame, 1280 * 720 * 4);
-            int r= write(fd, (const void*) latest_frame, 1920 * 1080 * 4);
+            int r= write(fd, (const void*) latest_frame, 1280 * 720 * 4);
             close(fd);
         }
     }

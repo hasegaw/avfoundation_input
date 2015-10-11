@@ -67,11 +67,14 @@ static AVCaptureDeviceInput *videoInput;
 
     // Latest frame data is always in latest_frame buffer.
 
-    [_lock lock];
+    if (height == 720)
+    {
+        [_lock lock];
 
-    memcpy(latest_frame, baseAddress, frameBytes);
+        memcpy(latest_frame, baseAddress, frameBytes);
 
-    [_lock unlock];
+        [_lock unlock];
+    }
 
     CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
 }
@@ -108,8 +111,7 @@ static AVCaptureDeviceInput *videoInput;
             }];
         observers = [[NSArray alloc] initWithObjects:deviceWasConnectedObserver, nil];
 
-    // latest_frame = malloc(1280*720*4);
-    latest_frame = malloc(1920*1080*4);
+    latest_frame = malloc(1280*720*4);
 
     return self;
 }
@@ -212,8 +214,7 @@ EXPORT_C void stopAVCapture() {
 EXPORT_C void readFrame(void *dest) {
     [_lock lock];
 
-    // memcpy(dest, latest_frame, 1280 * 720 * 4);
-    memcpy(dest, latest_frame, 1920 * 1080 * 4);
+    memcpy(dest, latest_frame, 1280 * 720 * 4);
 
     [_lock unlock];
 }

@@ -21,8 +21,7 @@ dll.selectCaptureDevice.restype = None
 
 dll.setupAVCapture()
 import numpy as np
-# frame = np.zeros((720, 1280, 4), np.uint8)
-frame = np.zeros((1080, 1920, 4), np.uint8)
+frame = np.zeros((720, 1280, 4), np.uint8)
 print(frame.shape, "%x" % frame.ctypes.data)
 
 # AVCaptureSesstionをstartしたあとに一度imshowしてからじゃないとキャプチャデバイスが見えない
