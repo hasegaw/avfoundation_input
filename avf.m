@@ -252,6 +252,11 @@ EXPORT_C void selectCaptureDevice(int num)
         }
     }
 
+    if ([camera hasMediaType:AVMediaTypeMuxed] || [camera hasMediaType:AVMediaTypeAudio])
+    {
+        NSLog(@"Selected video device has audio device, but not implemented.");
+    }
+
     [captureSession commitConfiguration];
     [_lock unlock];
 }
