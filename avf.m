@@ -123,9 +123,9 @@ static AVCaptureDeviceInput *videoInput;
 extern "C" {
 #endif
 
-EXPORT_C int setupAVCapture()
+EXPORT_C int initialize()
 {
-    // printf("setupAVCapture\n");
+    // printf("initialize\n");
     NSError *e = nil;
 
     NSDictionary *newSettings;
@@ -206,12 +206,12 @@ error:
     return 0;
 }
 
-EXPORT_C void stopAVCapture() {
+EXPORT_C void deinitialize() {
     [captureSession stopRunning];
     // NSLog(@"stop running");
 }
 
-EXPORT_C void readFrame(void *dest) {
+EXPORT_C void read_frame(void *dest) {
     [_lock lock];
 
     memcpy(dest, latest_frame, 1280 * 720 * 4);
@@ -231,7 +231,7 @@ EXPORT_C const char *get_source_name(int i) {
     return [[[captureDevice videoDevices][i] localizedName] UTF8String];
 }
 
-EXPORT_C void selectCaptureDevice(int num)
+EXPORT_C void select_capture_source(int num)
 {
     AVCaptureDevice *camera;
 
@@ -240,7 +240,7 @@ EXPORT_C void selectCaptureDevice(int num)
         return;
     }
 
-    // NSLog(@"selectCaptureDevice(%d)", num);
+    // NSLog(@"select_capture_source(%d)", num);
     [captureDevice setVideoDevices:[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]];
     camera = [captureDevice videoDevices][num];
     NSLog(@"Seleted capture device: %@ | uniqueID:%@ | modelID:%@",

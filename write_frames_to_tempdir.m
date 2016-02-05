@@ -25,7 +25,7 @@ int main(int argc, const char * argv[]) {
     int i;
     char filename[255];
     
-    setupAVCapture();
+    initialize();
 
     i = enumerate_sources();
     printf("%d devices detected\n", i);
@@ -40,7 +40,7 @@ int main(int argc, const char * argv[]) {
         sleep(1);
         
         if (1) { // For testing.
-            readFrame(latest_frame);
+            read_frame(latest_frame);
 
             snprintf((char*) &filename, sizeof(filename), "/tmp/camera.%d.raw", i);
             int fd = open((char*) &filename, O_RDWR|O_CREAT|O_APPEND, 0666);
@@ -49,6 +49,6 @@ int main(int argc, const char * argv[]) {
         }
     }
     
-    stopAVCapture();
+    deinitialize();
     return 0;
 }

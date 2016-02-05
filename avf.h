@@ -39,10 +39,10 @@
 extern "C" {
 #endif
 
-EXPORT_C void selectCaptureDevice(int num);
-EXPORT_C void readFrame(void *dest);
-EXPORT_C int setupAVCapture();
-EXPORT_C void stopAVCapture();
+EXPORT_C void select_capture_source(int num);
+EXPORT_C void read_frame(void *dest);
+EXPORT_C int initialize();
+EXPORT_C void deinitialize();
 EXPORT_C int enumerate_sources();
 EXPORT_C const char *get_source_name(int i);
 #ifdef __cplusplus
