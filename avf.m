@@ -219,13 +219,13 @@ EXPORT_C void read_frame(void *dest) {
     [_lock unlock];
 }
 
-EXPORT_C int enumerate_sources() {
+EXPORT_C int get_source_count() {
     [captureDevice setVideoDevices:[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]];
     return [[captureDevice videoDevices] count];
 }
 
 EXPORT_C const char *get_source_name(int i) {
-    if (i >= enumerate_sources())
+    if (i >= get_source_count())
         return NULL;
 
     return [[[captureDevice videoDevices][i] localizedName] UTF8String];
@@ -235,7 +235,7 @@ EXPORT_C void select_capture_source(int num)
 {
     AVCaptureDevice *camera;
 
-    if (num >= enumerate_sources()) {
+    if (num >= get_source_count()) {
         printf("Device number out of range\n");
         return;
     }

@@ -27,9 +27,9 @@ int main(int argc, const char * argv[]) {
     
     initialize();
 
-    i = enumerate_sources();
+    i = get_source_count();
     printf("%d devices detected\n", i);
-    for (i = 0; i < enumerate_sources(); i++) {
+    for (i = 0; i < get_source_count(); i++) {
         const char *dev_name = get_source_name(i);
         printf("%d: %s\n", i, dev_name);
     }

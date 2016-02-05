@@ -43,7 +43,7 @@ EXPORT_C void select_capture_source(int num);
 EXPORT_C void read_frame(void *dest);
 EXPORT_C int initialize();
 EXPORT_C void deinitialize();
-EXPORT_C int enumerate_sources();
+EXPORT_C int get_source_count();
 EXPORT_C const char *get_source_name(int i);
 #ifdef __cplusplus
 }

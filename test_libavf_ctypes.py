@@ -18,8 +18,8 @@ dll.read_frame.argtypes = [ ndpointer(ctypes.c_uint8, flags="C_CONTIGUOUS")]
 dll.read_frame.restype = None
 dll.select_capture_source.argtypes = [ctypes.c_int]
 dll.select_capture_source.restype = None
-dll.enumerate_sources.argtypes = None
-dll.enumerate_sources.restype = ctypes.c_int
+dll.get_source_count.argtypes = None
+dll.get_source_count.restype = ctypes.c_int
 dll.get_source_name.argtypes = [ctypes.c_int]
 dll.get_source_name.restype = ctypes.c_char_p
 
@@ -35,8 +35,8 @@ cv2.waitKey(3000)
 
 # setup capture device
 # TODO: デバイス一覧を表示して入力を受け付ける
-print('%d devices' % dll.enumerate_sources())
-for i in range(dll.enumerate_sources()):
+print('%d devices' % dll.get_source_count())
+for i in range(dll.get_source_count()):
     s = dll.get_source_name(i).decode('utf-8')
     print('%d: %s' % (i, s))
 
