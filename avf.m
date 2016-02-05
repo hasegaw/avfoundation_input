@@ -219,9 +219,26 @@ EXPORT_C void readFrame(void *dest) {
     [_lock unlock];
 }
 
+EXPORT_C int enumerate_sources() {
+    [captureDevice setVideoDevices:[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]];
+    return [[captureDevice videoDevices] count];
+}
+
+EXPORT_C const char *get_source_name(int i) {
+    if (i >= enumerate_sources())
+        return NULL;
+
+    return [[[captureDevice videoDevices][i] localizedName] UTF8String];
+}
+
 EXPORT_C void selectCaptureDevice(int num)
 {
     AVCaptureDevice *camera;
+
+    if (num >= enumerate_sources()) {
+        printf("Device number out of range\n");
+        return;
+    }
 
     // NSLog(@"selectCaptureDevice(%d)", num);
     [captureDevice setVideoDevices:[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo]];

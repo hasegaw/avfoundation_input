@@ -18,6 +18,10 @@ dll.readFrame.argtypes = [ ndpointer(ctypes.c_uint8, flags="C_CONTIGUOUS")]
 dll.readFrame.restype = None
 dll.selectCaptureDevice.argtypes = [ctypes.c_int]
 dll.selectCaptureDevice.restype = None
+dll.enumerate_sources.argtypes = None
+dll.enumerate_sources.restype = ctypes.c_int
+dll.get_source_name.argtypes = [ctypes.c_int]
+dll.get_source_name.restype = ctypes.c_char_p
 
 dll.setupAVCapture()
 import numpy as np
@@ -31,6 +35,11 @@ cv2.waitKey(3000)
 
 # setup capture device
 # TODO: デバイス一覧を表示して入力を受け付ける
+print('%d devices' % dll.enumerate_sources())
+for i in range(dll.enumerate_sources()):
+    s = dll.get_source_name(i).decode('utf-8')
+    print('%d: %s' % (i, s))
+
 dll.selectCaptureDevice(1)
 
 k = 0

@@ -43,6 +43,8 @@ EXPORT_C void selectCaptureDevice(int num);
 EXPORT_C void readFrame(void *dest);
 EXPORT_C int setupAVCapture();
 EXPORT_C void stopAVCapture();
+EXPORT_C int enumerate_sources();
+EXPORT_C const char *get_source_name(int i);
 #ifdef __cplusplus
 }
 #endif

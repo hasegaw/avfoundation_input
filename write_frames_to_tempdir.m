@@ -26,6 +26,14 @@ int main(int argc, const char * argv[]) {
     char filename[255];
     
     setupAVCapture();
+
+    i = enumerate_sources();
+    printf("%d devices detected\n", i);
+    for (i = 0; i < enumerate_sources(); i++) {
+        const char *dev_name = get_source_name(i);
+        printf("%d: %s\n", i, dev_name);
+    }
+
     char *latest_frame = malloc(1280 * 720 * 4);
     
     for ( i = 0; i < 10; i++) {
